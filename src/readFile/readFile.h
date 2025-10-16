@@ -28,6 +28,8 @@ typedef enum TileType{
 }TileType;
 
 void initializeData(Data *data, int height, int width, int durability, int durabilityLoss, int repairKitEfficiency);
+
+//TODO: Implementar vrificações mais robustas de integridade dos metadados fornecidos na entrada. Não confiar no usuário.
 Data* readFile(const char *fileName);
 void freeData(Data *data);
 

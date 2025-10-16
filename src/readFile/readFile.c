@@ -1,7 +1,6 @@
 #include "readFile.h"
 
 void initializeData(Data *data, int height, int width, int durability, int durabilityLoss, int repairKitEfficiency){
-    data = (Data*)malloc(sizeof(Data));
     data->map = (TileType**)malloc(height * sizeof(TileType*));
     
     for(int i = 0; i < height; i++){
@@ -10,10 +9,14 @@ void initializeData(Data *data, int height, int width, int durability, int durab
 
     data->height = height;
     data->width = width;
+
+    data->durability = durability;
+    data->durabilityLoss = durabilityLoss;
+    data->repairKitEfficiency = repairKitEfficiency;
 }
 
 Data* readFile(const char *fileName){
-    Data *data;
+    Data *data = (Data*)malloc(sizeof(Data));
 
     int height, width;
     int durability, durabilityLoss, repairKitEfficiency;
@@ -25,16 +28,32 @@ Data* readFile(const char *fileName){
         return NULL;
     }
 
-    fscanf(file, "%d %d %d\n", durability, durabilityLoss, repairKitEfficiency); //Read first line
-    fscanf(file, "%d %d\n", height, width); //Read second line
+    fscanf(file, "%d %d %d\n", &durability, &durabilityLoss, &repairKitEfficiency); //Read first line
+    fscanf(file, "%d %d\n", &height, &width); //Read second line
 
     initializeData(data, height, width, durability, durabilityLoss, repairKitEfficiency);
 
     for(int i = 0; i < height; i++){
+        int flagEOF = 0;
+
         for(int j = 0; j < width; j++){
             char tile;
-            fscanf(file, " %c", &tile); // Read each character with a space before to skip whitespace
             
+            if(tile == '\n'){ // In case there's a newline character, skip it
+                break;
+            }
+            else if(tile == EOF){
+                flagEOF = 1;
+                break;
+            }
+            
+            if(fscanf(file, " %c", &tile) != 1){
+                printf("Error reading map data at (%d, %d)\n", i, j);
+                freeData(data);
+                fclose(file);
+                return NULL;
+            }
+
             if(tile == 'X'){
                 data->map[i][j] = Start;
             }
@@ -50,6 +69,15 @@ Data* readFile(const char *fileName){
             else if(tile == 'P'){
                 data->map[i][j] = RepairKit;
             }
+            else{
+                printf("Unknown tile character '%c' at (%d, %d)\n", tile, i, j);
+                freeData(data);
+                fclose(file);
+                return NULL;
+            }
+        }
+        if(flagEOF){ // In case the file ends before filling the map
+            break;
         }
     }
 
