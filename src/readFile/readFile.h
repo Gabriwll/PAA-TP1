@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef enum TileType TileType;
+
 typedef struct Data{
     int durability;          // Maximum durability
     int durabilityLoss;      // Durability loss per tile
@@ -18,13 +20,15 @@ typedef struct Data{
 
 typedef enum TileType{
     Start, 
+    End,
     Empty, 
     Way, 
     RepairKit
 
 }TileType;
 
-void initializeData(Data *data);
-void readFile(const char *fileName, Data *data, TileType **map);
+void initializeData(Data *data, int height, int width, int durability, int durabilityLoss, int repairKitEfficiency);
+Data* readFile(const char *fileName);
+void freeData(Data *data);
 
 #endif // READ_FILE_H
