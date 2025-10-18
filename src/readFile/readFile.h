@@ -3,33 +3,33 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 typedef enum TileType TileType;
 
 typedef struct Data{
-    int durability;          // Maximum durability
-    int durabilityLoss;      // Durability loss per tile
-    int repairKitEfficiency; // Repair kit efficiency
-
-    // Map dimensions
+    int durability;          
+    int durabilityLoss;      
+    int repairKitEfficiency; 
     int height;
     int width;
-
-    TileType** map; // 2D array representing the map
+    int startX;
+    int startY;
+    TileType** map; 
+    bool** visited; //Matriz das posições visitadas
 }Data;
 
 typedef enum TileType{
     Start, 
     End,
-    Empty, 
-    Way, 
-    RepairKit
-
+    Empty,      //'.'
+    WayVertical, //'|'
+    WayHorizontal, //'-'
+    WayCross,   //'+'
+    RepairKit   //'P'
 }TileType;
 
 void initializeData(Data *data, int height, int width, int durability, int durabilityLoss, int repairKitEfficiency);
-
-//TODO: Implementar vrificações mais robustas de integridade dos metadados fornecidos na entrada. Não confiar no usuário.
 Data* readFile(const char *fileName);
 void freeData(Data *data);
 

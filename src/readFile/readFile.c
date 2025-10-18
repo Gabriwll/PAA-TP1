@@ -1,15 +1,19 @@
-#include "readFile.h"
+#include "src/readFile/readFile.h" 
+#include <string.h> 
 
 void initializeData(Data *data, int height, int width, int durability, int durabilityLoss, int repairKitEfficiency){
     data->map = (TileType**)malloc(height * sizeof(TileType*));
+    data->visited = (bool**)malloc(height * sizeof(bool*)); 
     
     for(int i = 0; i < height; i++){
         data->map[i] = (TileType*)malloc(width * sizeof(TileType));
+        data->visited[i] = (bool*)malloc(width * sizeof(bool)); 
+        memset(data->visited[i], 0, width * sizeof(bool)); 
     }
-
     data->height = height;
     data->width = width;
-
+    data->startX = -1; 
+    data->startY = -1;
     data->durability = durability;
     data->durabilityLoss = durabilityLoss;
     data->repairKitEfficiency = repairKitEfficiency;
@@ -17,80 +21,66 @@ void initializeData(Data *data, int height, int width, int durability, int durab
 
 Data* readFile(const char *fileName){
     Data *data = (Data*)malloc(sizeof(Data));
-
-    int height, width;
-    int durability, durabilityLoss, repairKitEfficiency;
-
+    int height, width, durability, durabilityLoss, repairKitEfficiency;
     FILE *file = fopen(fileName, "r");
 
     if (file == NULL) {
-        perror("Error opening file");
+        perror("Erro ao abrir o arquivo");
+        free(data);
         return NULL;
     }
 
-    fscanf(file, "%d %d %d\n", &durability, &durabilityLoss, &repairKitEfficiency); //Read first line
-    fscanf(file, "%d %d\n", &height, &width); //Read second line
+    if (fscanf(file, "%d %d %d\n", &durability, &durabilityLoss, &repairKitEfficiency) != 3) { //
+        printf("Erro ao ler os metadados (D, D', A)\n");
+        fclose(file); free(data); return NULL;
+    }
+    if (fscanf(file, "%d %d\n", &height, &width) != 2) { //
+        printf("Erro ao ler as dimensões (Altura, Largura)\n");
+        fclose(file); free(data); return NULL;
+    }
 
     initializeData(data, height, width, durability, durabilityLoss, repairKitEfficiency);
 
     for(int i = 0; i < height; i++){
-        int flagEOF = 0;
-
         for(int j = 0; j < width; j++){
             char tile;
             
-            if(tile == '\n'){ // In case there's a newline character, skip it
-                break;
-            }
-            else if(tile == EOF){
-                flagEOF = 1;
-                break;
+            if(fscanf(file, " %c", &tile) != 1){
+                printf("Erro lendo o mapa em (%d, %d)\n", i, j);
+                freeData(data);
+                fclose(file);
+                return NULL;
             }
             
-            if(fscanf(file, " %c", &tile) != 1){
-                printf("Error reading map data at (%d, %d)\n", i, j);
-                freeData(data);
-                fclose(file);
-                return NULL;
-            }
-
-            if(tile == 'X'){
-                data->map[i][j] = Start;
-            }
-            else if(tile == 'F'){
-                data->map[i][j] = End;
-            }
-            else if(tile == '.'){
-                data->map[i][j] = Empty;
-            }
-            else if(tile == '-' || tile == '|' || tile == '+'){
-                data->map[i][j] = Way;
-            }
-            else if(tile == 'P'){
-                data->map[i][j] = RepairKit;
-            }
+            if(tile == 'X'){ data->map[i][j] = Start; data->startX = i; data->startY = j; }
+            else if(tile == 'F'){ data->map[i][j] = End; }
+            else if(tile == '.'){ data->map[i][j] = Empty; }
+            else if(tile == '|'){ data->map[i][j] = WayVertical; }
+            else if(tile == '-'){ data->map[i][j] = WayHorizontal; }
+            else if(tile == '+'){ data->map[i][j] = WayCross; }
+            else if(tile == 'P'){ data->map[i][j] = RepairKit; }
             else{
-                printf("Unknown tile character '%c' at (%d, %d)\n", tile, i, j);
-                freeData(data);
-                fclose(file);
-                return NULL;
+                printf("Caractere desconhecido '%c' em (%d, %d)\n", tile, i, j);
+                freeData(data); fclose(file); return NULL;
             }
-        }
-        if(flagEOF){ // In case the file ends before filling the map
-            break;
         }
     }
-
     fclose(file);
 
+    if (data->startX == -1 || data->startY == -1) {
+        printf("Erro: Posição inicial 'X' não encontrada no mapa.\n");
+        freeData(data);
+        return NULL;
+    }
     return data;
 }
 
 void freeData(Data *data){
     for(int i = 0; i < data->height; i++){
         free(data->map[i]);
+        free(data->visited[i]); 
     }
-
     free(data->map);
+    free(data->visited);
     free(data);
 }
