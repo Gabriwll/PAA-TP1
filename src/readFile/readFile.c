@@ -1,25 +1,12 @@
 #include "readFile.h"
 
-void initializeData(Data *data, int height, int width, int durability, int durabilityLoss, int repairKitEfficiency){
-    data->map = (TileType**)malloc(height * sizeof(TileType*));
-    
-    for(int i = 0; i < height; i++){
-        data->map[i] = (TileType*)malloc(width * sizeof(TileType));
-    }
-
-    data->height = height;
-    data->width = width;
-
-    data->durability = durability;
-    data->durabilityLoss = durabilityLoss;
-    data->repairKitEfficiency = repairKitEfficiency;
-}
-
-Data* readFile(const char *fileName){
-    Data *data = (Data*)malloc(sizeof(Data));
+MapData* readFile(const char *fileName){
+    MapData *map = (MapData*)malloc(sizeof(MapData));
 
     int height, width;
     int durability, durabilityLoss, repairKitEfficiency;
+
+    printf("Reading map from file: %s\n", fileName);
 
     FILE *file = fopen(fileName, "r");
 
@@ -31,7 +18,7 @@ Data* readFile(const char *fileName){
     fscanf(file, "%d %d %d\n", &durability, &durabilityLoss, &repairKitEfficiency); //Read first line
     fscanf(file, "%d %d\n", &height, &width); //Read second line
 
-    initializeData(data, height, width, durability, durabilityLoss, repairKitEfficiency);
+    initializeMap(map, height, width, durability, durabilityLoss, repairKitEfficiency);
 
     for(int i = 0; i < height; i++){
         int flagEOF = 0;
@@ -49,29 +36,44 @@ Data* readFile(const char *fileName){
             
             if(fscanf(file, " %c", &tile) != 1){
                 printf("Error reading map data at (%d, %d)\n", i, j);
-                freeData(data);
+                freeMap(map);
                 fclose(file);
                 return NULL;
             }
 
             if(tile == 'X'){
-                data->map[i][j] = Start;
+                Coordinate startCoord;
+                startCoord.x = j;
+                startCoord.y = i;
+
+                map->field[i][j] = Start;
+
+                setStartCoord(map, startCoord);
             }
             else if(tile == 'F'){
-                data->map[i][j] = End;
+                Coordinate endCoord;
+                endCoord.x = j;
+                endCoord.y = i;
+
+                map->field[i][j] = End;
+
+                setEndCoord(map, endCoord);
             }
             else if(tile == '.'){
-                data->map[i][j] = Empty;
+                map->field[i][j] = Empty;
             }
-            else if(tile == '-' || tile == '|' || tile == '+'){
-                data->map[i][j] = Way;
+            else if(tile == '-' || tile == '|'){
+                map->field[i][j] = Way;
+            }
+            else if(tile == '+'){
+                map->field[i][j] = Intersection;
             }
             else if(tile == 'P'){
-                data->map[i][j] = RepairKit;
+                map->field[i][j] = RepairKit;
             }
             else{
                 printf("Unknown tile character '%c' at (%d, %d)\n", tile, i, j);
-                freeData(data);
+                freeMap(map);
                 fclose(file);
                 return NULL;
             }
@@ -83,14 +85,5 @@ Data* readFile(const char *fileName){
 
     fclose(file);
 
-    return data;
-}
-
-void freeData(Data *data){
-    for(int i = 0; i < data->height; i++){
-        free(data->map[i]);
-    }
-
-    free(data->map);
-    free(data);
+    return map;
 }
