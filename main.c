@@ -1,39 +1,21 @@
 #include <stdio.h>
+#include "src/map/map.h"
 #include "src/readFile/readFile.h"
+#include "src/backtracking/pathfinder.h"
 
 int main(int argc, char *argv[]) {
-    // Read the file and get the data
-    printf("Reading file...\n");
-    Data* data = readFile("./Files/In/map1.txt");
-    if (data == NULL) {
-        printf("Failed to read file\n");
-        return 1;
-    }
-    printf("File read successfully!\n");
+    const char *fname = (argc > 1) ? argv[1] : "entrada.txt";  // usa argumento se houver
+    int sr = -1, sc = -1;
 
-    // Print the map dimensions
-    printf("Map dimensions: %d x %d\n", data->height, data->width);
-    printf("Durability: %d\n", data->durability);
-    printf("Durability Loss: %d\n", data->durabilityLoss);
-    printf("Repair Kit Efficiency: %d\n", data->repairKitEfficiency);
+    printf("=== EXPRESSO INTERESTELAR ===\n");
+    if (!ler_arquivo(fname, &sr, &sc)) return 1;
 
-    // Print the map
-    printf("\nMap:\n");
-    for (int i = 0; i < data->height; i++) {
-        for (int j = 0; j < data->width; j++) {
-            switch (data->map[i][j]) {
-                case Start:     printf("X"); break;
-                case End:       printf("F"); break;
-                case Empty:     printf("."); break;
-                case Way:       printf("-"); break;
-                case RepairKit: printf("P"); break;
-            }
-        }
-        printf("\n");
-    }
+    debug_mapa(sr, sc);
+    debug_conexoes(sr, sc);
 
-    // Free allocated memory
-    freeData(data);
-
+    printf("Buscando solucao...\n");
+    movimentar(sr, sc, D_init, 0, 1);
+    imprimir_solucao();
+    libera_estruturas();
     return 0;
 }
